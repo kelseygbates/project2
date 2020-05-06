@@ -1,10 +1,46 @@
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <pthread.h>
 #include <time.h>
+#include <string>
+using namespace std;
+
+const string carOutput = "car.log";
+const string workerOutput = "flagperson.log";
+
+struct car {
+		int carId;
+		char direction;
+		time_t arrive;
+		time_t start;
+		time_t end;
+};
+
+// create global semaphore objects
 
 int main(int argc, char* argv[]) {
+	// get number of cars from command line
+	if(argc < 2) {
+		cout << "Please enter a number of cars to simulate" << endl;
+		exit(-1);
+	}
+	int cars = atoi(argv[1]);
+	cout << "Beginning simulation with " << cars << " cars" << endl;
+}
 
+void *worker(void *arg) {
+	while(1) {
+		// check to see if there are any cars to be served with
+		// call to sem_wait()?
+
+		// check if there are 10 or more cars waiting on the other side
+
+		// create car thread and detach
+		// use pthread_sleep to simulate 2 seconds
+		// log information to carOutput file
+
+	}
 }
 
 // Included from assignment
