@@ -36,18 +36,18 @@ int main(int argc, char* argv[]) {
 		perror("could not create worker thread");
 		exit(-1;)
 	}
-	if(pthread_create(&north, NULL, carfn, NULL)) {
+	if(pthread_create(&north, NULL, northCar, NULL)) {
 		perror("could not create northbound thread");
 		exit(-1);
 	}
-	if(pthread_create(&south, NULL, carfn, NULL)) {
+	if(pthread_create(&south, NULL, southCar, NULL)) {
 		perror("could not create southbound thread");
 		exit(-1);
 	}
 }
 
 // Producer
-void *carfn(void *arg) {
+void *northCar(void *arg) {
 		// generate new car using probability model
 		// set all necessary fields of the car struct
 
@@ -59,6 +59,16 @@ void *carfn(void *arg) {
 		// release lock for north/south bound car queue
 }
 
+vid *southCar(void *arg) {
+		// generate new car using probability model
+		// set all necessary fields of the car struct
+
+		// wait on flag person
+
+
+}
+
+
 // Consumer
 void *worker(void *arg) {
 	while(1) {
@@ -66,24 +76,26 @@ void *worker(void *arg) {
 		// call to sem_wait()?
 
 		// acquire lock for north/south bound car queue
-		// pthread_mutex_lock(&north_queue_mutex)
-		// pthread_mutex_lock(&south_queue_mutex)
+		// pthread_mutex_lock(&queue_mutex)
 
 		// remove the next car from the queue
 		// create car thread and detach
 		// use pthread_sleep to simulate 2 seconds
 		// call to processCar()
 		// check if there are 10 or more cars waiting on the other side
+				// if there are, switch to other queue
+				// else: process next car in the current queue (if there is one)
 
+		// when theres no cars in either queue
 		// release the lock for north/south bound car queue
-		// pthread_mutex_unlock(&north_queue_mutex)
-		// pthread_mutex_unlock(&south_queue_mutex)
+		// pthread_mutex_unlock(&queue_mutex)
 
 	}
 }
 
 // Log information to carOutput file
 void processCar() {
+	// set start and end time in car struct
 
 }
 

@@ -23,3 +23,11 @@ Should we use the STL queue to keep track of the cars on either side
 so that we have access to size() instead of using a linked list?
 
 Should we use one mutex lock for both queues of cars?
+
+How many semaphores?
+* 1 mutex lock semaphore that controls access to north and south queues
+* 2 counting semaphores for the number of cars in each queue
+
+HELP ME
+
+Random number generator passed to multiple threads
