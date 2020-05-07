@@ -1,0 +1,25 @@
+Questions:
+
+If we are trying to model this as a producer consumer problem, can we
+say that the worker is the consumer and the north/south bound threads
+are the producers?
+
+When will the worker thread get blocked?
+* When there are no cars at either lane
+* We want to context switch when there are 10 cars on the other lane
+
+When will the northbound thread get blocked?
+* When the worker is asleep
+* When the southbound thread is letting cars through
+
+When will the southbound thread get blocked?
+* When the worker is asleep
+* When the northbound thread is letting cars through
+
+What are the race conditions?
+* North and south queue
+
+Should we use the STL queue to keep track of the cars on either side
+so that we have access to size() instead of using a linked list?
+
+Should we use one mutex lock for both queues of cars?

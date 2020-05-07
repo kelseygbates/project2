@@ -46,22 +46,49 @@ int main(int argc, char* argv[]) {
 	}
 }
 
+// Producer
 void *carfn(void *arg) {
+		// generate new car using probability model
+		// set all necessary fields of the car struct
 
+		// acquire lock for north/south bound car queue
+		// add the car to the queue
+
+		// wake up the worker thread
+
+		// release lock for north/south bound car queue
 }
 
+// Consumer
 void *worker(void *arg) {
 	while(1) {
 		// check to see if there are any cars to be served with
 		// call to sem_wait()?
 
-		// check if there are 10 or more cars waiting on the other side
+		// acquire lock for north/south bound car queue
+		// pthread_mutex_lock(&north_queue_mutex)
+		// pthread_mutex_lock(&south_queue_mutex)
 
+		// remove the next car from the queue
 		// create car thread and detach
 		// use pthread_sleep to simulate 2 seconds
-		// log information to carOutput file
+		// call to processCar()
+		// check if there are 10 or more cars waiting on the other side
+
+		// release the lock for north/south bound car queue
+		// pthread_mutex_unlock(&north_queue_mutex)
+		// pthread_mutex_unlock(&south_queue_mutex)
 
 	}
+}
+
+// Log information to carOutput file
+void processCar() {
+
+}
+
+bool probabilityModel() {
+
 }
 
 // Included from assignment
