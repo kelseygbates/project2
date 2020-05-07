@@ -27,6 +27,27 @@ int main(int argc, char* argv[]) {
 	}
 	int cars = atoi(argv[1]);
 	cout << "Beginning simulation with " << cars << " cars" << endl;
+
+	// Create threads for Northbound, Southbound, and worker
+	pthread_id worker;
+	pthread_id north;
+	pthread_id south;
+	if(pthread_create(&worker, NULL, worker, NULL)) {
+		perror("could not create worker thread");
+		exit(-1;)
+	}
+	if(pthread_create(&north, NULL, carfn, NULL)) {
+		perror("could not create northbound thread");
+		exit(-1);
+	}
+	if(pthread_create(&south, NULL, carfn, NULL)) {
+		perror("could not create southbound thread");
+		exit(-1);
+	}
+}
+
+void *carfn(void *arg) {
+
 }
 
 void *worker(void *arg) {
