@@ -42,7 +42,10 @@ void *worker(void *arg) {
         // check to see if there are any cars to be served with
         while (!northC.empty() && !southC.empty())
         {
-
+            // open flag person log
+            // log sleeping
+            //close flag person log
+            //pthread_sleep(1);
         }
         // call to sem_wait()?
 
@@ -72,7 +75,6 @@ void processCar() {
 //True if car following, false if no car comes
 bool probabilityModel() {
     return (random() * 10 < 8);
-}
 
 //Car consumer
 void *consume(void *args)
@@ -84,7 +86,32 @@ void *consume(void *args)
 
         // check sizes of queues
         // switch direction empty or 10+ cars on opp. side
-        //
+        if (fDirection == "north")
+        {
+            if (northC.size() < 10 && southC.size() >= 10) {
+                fDirection = "south";
+            }
+            else if (northC.empty())
+            {
+                //put worker to sleep (log)
+            }
+            else
+                processCar();
+        }
+
+        if (fDirection == "south")
+        {
+            if (northC.size() >= 10 && southC.size() < 10)
+            {
+                fDirection = "north";
+            }
+            else if (southC.empty())
+            {
+                //put worker to sleep (log)
+            }
+            else
+                processCar();
+        }
 
 
     }
@@ -119,8 +146,8 @@ void *produceSouth(void *args)
 
     while(1)
     {
-        sem_wait(&carSem);
-        pthread_mutex_lock(&flagMutex); // acquire lock for north/south bound car queue
+        sem_wait(&carSem); // acquire lock for north/south bound car queue
+        pthread_mutex_lock(&flagMutex); // lock flag person
 
         //generate a new car using probability model
         while(probabilityModel()) { //how do we make this change??
