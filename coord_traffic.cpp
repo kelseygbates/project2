@@ -28,10 +28,10 @@ struct car {
 string fDirection = "north";
 
 // create global semaphore objects
-sem_t moreCars;
+sem_t moreCars; // how worker knows that there are cars in queues
 
 pthread_mutex_t countMutex;
-int producedCars = 0; //# of cars created
+int count = 0; //# of cars created
 int limitCars = 0; // # cars input from command line
 
 // need semaphores for N and S queues???
@@ -74,7 +74,7 @@ void *worker(void *arg) {
         pthread_t carThread;
         pthread_create(&carThread, NULL, &consume, NULL);
         pthread_detach(carThread);
-        if (producedCars == limitCars) {
+        if (count == limitCars) {
             pthread_mutex_unlock(queueMutex);
             pthread_exit();
         }
@@ -136,12 +136,12 @@ void *produceSouth(void *args)
     {
         pthread_mutex_lock(&queueMutex);
         pthread_mutex_lock(&countMutex);
-        producedCars++;
-        if (producedCars > limitCars) {
+        count++;
+        if (count > limitCars) {
             pthread_exit();
         }
+        newCar.carId = count; // set ID to car count
         pthread_mutex_unlock(&countMutex);
-        newCar.carId = producedCars; // set ID to car count
 
         // log car arrival-time
         //newCar.arrive = arrival;
@@ -171,21 +171,21 @@ void *produceNorth(void *args)
 
         pthread_mutex_lock(&queueMutex);
         pthread_mutex_lock(&countMutex);
-        producedCars++;
-        if (producedCars > limitCars) {
+        count++;
+        if (count > limitCars) {
             pthread_exit();
         }
+        newCar.carId = count;
         pthread_mutex_unlock(&countMutex);
-        newCar.carId = producedCars;
 
         // log car arrival-time
         //newCar.arrive = arrival;
 
         newCar.direction = 'N';
         northC.push(newCar);
+        pthread_mutex_unlock(&queueMutex);
         sem_signal(&moreCars);
 
-        pthread_mutex_unlock(&queueMutex);
         //no car comes, 20 second delay
         if(!probabilityModel()){
             pthread_sleep(20);
