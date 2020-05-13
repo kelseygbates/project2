@@ -31,7 +31,7 @@ string fDirection = "north";
 sem_t moreCars; // how worker knows that there are cars in queues
 
 pthread_mutex_t countMutex;
-int count = 0; //# of cars created
+int producedCars = 0; //# of cars created
 int limitCars = 0; // # cars input from command line
 
 // need semaphores for N and S queues???
@@ -54,15 +54,15 @@ void *worker(void *arg) {
 
         pthread_mutex_lock(&queueMutex);
         if (northC.size() == 1 && southC.size() == 0) { // immediately set direction to north if
-            fDirection == "north";                      // north car gets there first (need to reset direction)
+            fDirection = "north";                      // north car gets there first (need to reset direction)
             queuePtr = &northC;
         } else if (southC.size() == 1 && northC.size() == 0){
-            fDirection == "south";
+            fDirection = "south";
             queuePtr = &southC;
         } else if (northC.size() >= 10 && southC.size() < 10) {
             fDirection = "north";
             queuePtr = &northC;
-        } else if (southC.size() >= 10 && northC.size < 10) {
+        } else if (southC.size() >= 10 && northC.size() < 10) {
             fDirection = "south";
             queuePtr = &southC;
         }
@@ -74,9 +74,9 @@ void *worker(void *arg) {
         pthread_t carThread;
         pthread_create(&carThread, NULL, &consume, NULL);
         pthread_detach(carThread);
-        if (count == limitCars) {
-            pthread_mutex_unlock(queueMutex);
-            pthread_exit();
+        if (producedCars == limitCars) {
+            pthread_mutex_unlock(&queueMutex);
+            pthread_exit(NULL);
         }
         pthread_mutex_unlock(&queueMutex);
 
@@ -101,6 +101,7 @@ void *consume(void *args){
         // log end-time
 
         pthread_mutex_unlock(&queueMutex);
+        pthread_exit(NULL);
 }
 
 // Included from assignment
@@ -136,11 +137,11 @@ void *produceSouth(void *args)
     {
         pthread_mutex_lock(&queueMutex);
         pthread_mutex_lock(&countMutex);
-        count++;
-        if (count > limitCars) {
-            pthread_exit();
+        producedCars++;
+        if (producedCars > limitCars) {
+            pthread_exit(NULL);
         }
-        newCar.carId = count; // set ID to car count
+        newCar.carId = producedCars; // set ID to car count
         pthread_mutex_unlock(&countMutex);
 
         // log car arrival-time
@@ -150,7 +151,7 @@ void *produceSouth(void *args)
         southC.push(newCar);
 
         pthread_mutex_unlock(&queueMutex); // unlock after sleep?
-        sem_signal(&moreCars);
+        sem_post(&moreCars);
         if (!probabilityModel()){
             pthread_sleep(20);
         }
@@ -171,11 +172,11 @@ void *produceNorth(void *args)
 
         pthread_mutex_lock(&queueMutex);
         pthread_mutex_lock(&countMutex);
-        count++;
-        if (count > limitCars) {
-            pthread_exit();
+        producedCars++;
+        if (producedCars > limitCars) {
+            pthread_exit(NULL);
         }
-        newCar.carId = count;
+        newCar.carId = producedCars;
         pthread_mutex_unlock(&countMutex);
 
         // log car arrival-time
@@ -184,7 +185,7 @@ void *produceNorth(void *args)
         newCar.direction = 'N';
         northC.push(newCar);
         pthread_mutex_unlock(&queueMutex);
-        sem_signal(&moreCars);
+        sem_post(&moreCars);
 
         //no car comes, 20 second delay
         if(!probabilityModel()){
@@ -207,18 +208,18 @@ int main(int argc, char* argv[]) {
     cout << "Beginning simulation with " << cars << " cars" << endl;
 
     // Create threads for Northbound, Southbound, and worker
-    pthread_t worker;
+    pthread_t workerTh;
     pthread_t north;
     pthread_t south;
-    if(pthread_create(&worker, NULL, worker, NULL) {
+    if(pthread_create(&workerTh, NULL, &worker, NULL)) {
         perror("could not create worker thread");
         exit(-1);
     }
-    if(pthread_create(&north, NULL, produceNorth, NULL)) {
+    if(pthread_create(&north, NULL, &produceNorth, NULL)) {
         perror("could not create northbound thread");
         exit(-1);
     }
-    if(pthread_create(&south, NULL, produceSouth, NULL)) {
+    if(pthread_create(&south, NULL, &produceSouth, NULL)) {
         perror("could not create southbound thread");
         exit(-1);
     }
