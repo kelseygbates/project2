@@ -5,7 +5,7 @@ CFLAGS = -Wall -c $(DEBUG)
 LFLAGS = -Wall $(DEBUG)
 
 coord_traffic : $(OBJS)
-	$(CC) $(LFLAGS) $(OBJS) -pthread -o coord_traffic
+	$(CC) $(LFLAGS) $(OBJS) -o coord_traffic -pthread
 
 coord_traffic.o :
 	$(CC) $(CFLAGS) coord_traffic.cpp
