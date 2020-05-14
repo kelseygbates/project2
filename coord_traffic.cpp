@@ -17,6 +17,7 @@ using namespace std;
 const string carOutput = "car.log";
 const string workerOutput = "flagperson.log";
 ofstream carLog("car.log", ofstream::out);
+ofstream flagPerson("flagperson.log", ofstream::out);
 
 // Car structure to ease output
 struct car {
@@ -87,7 +88,11 @@ void *consume(void *args){
 void *worker(void *arg) {
 	car* currCar;
 	while(1) {
+        flagPerson << stringTime() << "     " << "sleep\n";
 		sem_wait(&moreCars);
+		flagPerson << stringTime() << "     " << "woken-up\n";
+		flagPerson.flush();
+
 
 		// log time + status flag person wakes up
 
@@ -125,6 +130,7 @@ void *worker(void *arg) {
 		pthread_mutex_unlock(&queueMutex);
 
 		// log time + status flag person going to sleep
+        flagPerson.flush();
 
 	}
 }
@@ -232,6 +238,8 @@ int main(int argc, char* argv[]) {
 	carLog << "carID    direction   arrival-time    start-time  end-time\n";
 	//carLog.close();
 	carLog.flush();
+	flagPerson << "Time     State\n";
+	flagPerson.flush();
 
 	sem_init(&moreCars, 0,0);
 
