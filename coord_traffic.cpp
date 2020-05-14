@@ -49,7 +49,7 @@ string stringTime();
 
 // True if car following, false if no car comes
 bool probabilityModel() {
-	return (random() * 10 < 8);
+	return ((rand() % 10 + 1) < 8);
 }
 
 // Included from assignment
@@ -103,8 +103,6 @@ void *worker(void *arg) {
 			fDirection = "south";
 			currCar = southC.front();
 			southC.pop();
-		} else {
-			cout << "Fuck" << endl;
 		}
 		currCar->start = stringTime();
 		pthread_sleep(2);
@@ -119,7 +117,7 @@ void *worker(void *arg) {
 			cout << "Worker: successfully created car thread" << endl;
 		}
 		pthread_detach(carThread);
-		if (producedCars >= limitCars) { // Means we are done
+		if (currCar->carId >= limitCars) { // Means we are done
 			cout << "Done" << endl;
 			pthread_exit(NULL);
 		}
@@ -151,7 +149,6 @@ void *produceSouth(void *args)
 		}
 		car* newCar = new car();
 		newCar->carId = producedCars; // set ID to car count
-		pthread_mutex_unlock(&countMutex);
 
 		string s = stringTime();
 		newCar->arrive = s;
@@ -159,11 +156,13 @@ void *produceSouth(void *args)
 		assert(newCar);
 
 		southC.push(newCar);
+
+		pthread_mutex_unlock(&countMutex);
 		pthread_mutex_unlock(&queueMutex); // unlock after sleep?
+
 		sem_post(&moreCars);
 		if (!probabilityModel()){
 			cout << "Southbound waiting 20 sec" << endl;
-
 			pthread_sleep(20);
 		}
 
@@ -187,7 +186,6 @@ void *produceNorth(void *args)
 		}
 		car* newCar = new car();
 		newCar->carId = producedCars;
-		pthread_mutex_unlock(&countMutex);
 
 		string s = stringTime();
 		newCar->arrive = s;
@@ -196,6 +194,7 @@ void *produceNorth(void *args)
 		assert(newCar);
 		northC.push(newCar);
 
+		pthread_mutex_unlock(&countMutex);
 		pthread_mutex_unlock(&queueMutex);
 
 		sem_post(&moreCars);
@@ -224,6 +223,7 @@ int main(int argc, char* argv[]) {
 		cout << "Please enter a number of cars to simulate" << endl;
 		exit(-1);
 	}
+
 	string time = stringTime();
 	cout << time << endl;
 	int cars = atoi(argv[1]);
