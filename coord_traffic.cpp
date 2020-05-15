@@ -10,7 +10,6 @@
 #include <cstring>
 #include <string>
 #include <fstream>
-#include <cassert>
 using namespace std;
 
 // Global file output objects
@@ -19,7 +18,7 @@ const string workerOutput = "flagperson.log";
 ofstream carLog("car.log", ofstream::out);
 ofstream flagPerson("flagperson.log", ofstream::out);
 
-// Car structure to ease output
+// Car structure to hold specific data about each car
 struct car {
 		int carId;
 		char direction;
@@ -28,14 +27,10 @@ struct car {
 		string end;
 };
 
-//Current direction of the flagPerson
-string fDirection = "north";
-
 // create global semaphore objects
 sem_t moreCars; // how worker knows that there are cars in queues
 
 //Initialize mutex
-pthread_mutex_t countMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t queueMutex = PTHREAD_MUTEX_INITIALIZER;
 
 int producedCars = 0; // # of cars created so far
@@ -75,12 +70,12 @@ int pthread_sleep(int seconds)
 }
 
 
-//Car consumer
+// Car consumer thread function
+// Logs to output file
 void *consume(void *args){
 	car* currCar = (car*)args;
-
-	carLog << currCar->carId << "   " << currCar->direction << "    " << currCar->arrive << "   " << currCar->start
-				 << "     " << currCar->end << "\n";
+	carLog << currCar->carId << "        " << currCar->direction << "           " << currCar->arrive << "        "
+	       << currCar->start << "       " << currCar->end << "\n";
 	carLog.flush();
 	pthread_exit(NULL);
 }
@@ -88,50 +83,40 @@ void *consume(void *args){
 void *worker(void *arg) {
 	car* currCar;
 	while(1) {
-        flagPerson << stringTime() << "     " << "sleep\n";
+		flagPerson << stringTime() << "     " << "sleep\n";
 		sem_wait(&moreCars);
 		flagPerson << stringTime() << "     " << "woken-up\n";
 		flagPerson.flush();
 
-
-		// log time + status flag person wakes up
-
-		pthread_mutex_lock(&queueMutex); // acquire lock for job queue
-		pthread_mutex_lock(&countMutex);
+		pthread_mutex_lock(&queueMutex); // Enter critical section
 
 		// Remove the next car from the appropriate queue
-		if (northC.size() >= 1 && southC.size() < 10) { // immediately set direction to north if
-			fDirection = "north";                      // north car gets there first (need to reset direction)
+		if (northC.size() >= 1 && southC.size() < 10) {
 			currCar = northC.front();
 			northC.pop();
 		} else if (southC.size() >= 1 && northC.size() < 10) {
-			fDirection = "south";
 			currCar = southC.front();
 			southC.pop();
 		}
+
+		// Assign start time, allow 2 seconds to cross, then assign end time
 		currCar->start = stringTime();
 		pthread_sleep(2);
 		currCar->end = stringTime();
 
+		// Create and detach car thread, passing in current car
 		pthread_t carThread;
-		assert(currCar);
 		if(pthread_create(&carThread, NULL, &consume, (void*)currCar)) {
 			perror("Worker couldn't create car thread");
 			exit(-1);
-		} else {
-			cout << "Worker: successfully created car thread" << endl;
 		}
 		pthread_detach(carThread);
-		if (currCar->carId >= limitCars) { // Means we are done
-			cout << "Done" << endl;
+		if (currCar->carId >= limitCars) { // Check if we have reached the user's desired number of cars
 			pthread_exit(NULL);
 		}
-		pthread_mutex_unlock(&countMutex);
-		pthread_mutex_unlock(&queueMutex);
+		pthread_mutex_unlock(&queueMutex); // Exit critical section
 
-		// log time + status flag person going to sleep
-        flagPerson.flush();
-
+		flagPerson.flush();
 	}
 }
 
@@ -140,78 +125,69 @@ void *worker(void *arg) {
 //  - produces and enqueues cars
 void *produceSouth(void *args)
 {
-	//struct car newCar;
 	while(1)
 	{
-		pthread_mutex_lock(&queueMutex);
-		pthread_mutex_lock(&countMutex);
-		producedCars++;
-		cout << "Car count(South): " << producedCars << endl;
-		if (producedCars > limitCars) {
-			cout << "Done producing cars South!" << endl;
+		pthread_mutex_lock(&queueMutex); // Enter critical section
+
+		producedCars++; // Increase number of cars produced
+		if (producedCars > limitCars) { // Check to see if we have produced user's desired number of cars
 			pthread_mutex_unlock(&queueMutex);
-			pthread_mutex_unlock(&countMutex);
 			pthread_exit(NULL);
 		}
+
+		// Create new car object and assign data
 		car* newCar = new car();
 		newCar->carId = producedCars; // set ID to car count
-
 		string s = stringTime();
 		newCar->arrive = s;
 		newCar->direction = 'S';
-		assert(newCar);
 
+		// Add to southbound queue
 		southC.push(newCar);
 
-		pthread_mutex_unlock(&countMutex);
-		pthread_mutex_unlock(&queueMutex); // unlock after sleep?
+		pthread_mutex_unlock(&queueMutex); // Exit critical section
 
-		sem_post(&moreCars);
-		if (!probabilityModel()){
-			cout << "Southbound waiting 20 sec" << endl;
+		sem_post(&moreCars); // Wake up worker thread
+		if (!probabilityModel()){ // Check for another car coming
 			pthread_sleep(20);
 		}
-
 	}
-	return 0;
 }
+
 //Northbound Car producer
+// - produces and enqueues cars
 void *produceNorth(void *args)
 {
 	while(1)
 	{
-		pthread_mutex_lock(&queueMutex);
-		pthread_mutex_lock(&countMutex);
-		producedCars++;
-		cout << "Car count(North): " << producedCars << endl;
-		if (producedCars > limitCars) {
-			cout << "Done producing North! " << endl;
+		pthread_mutex_lock(&queueMutex); // Enter critical section
+
+		producedCars++; // Increase number of cars to produce
+		if (producedCars > limitCars) { // Check to see if we have produced user's desired number of cars
 			pthread_mutex_unlock(&queueMutex);
-			pthread_mutex_unlock(&countMutex);
 			pthread_exit(NULL);
 		}
+
+		// Create new car and assign data
 		car* newCar = new car();
 		newCar->carId = producedCars;
-
 		string s = stringTime();
 		newCar->arrive = s;
-
 		newCar->direction = 'N';
-		assert(newCar);
+
+		// Add to northbound queue
 		northC.push(newCar);
 
-		pthread_mutex_unlock(&countMutex);
-		pthread_mutex_unlock(&queueMutex);
+		pthread_mutex_unlock(&queueMutex); // Exit critical section
 
-		sem_post(&moreCars);
-		//no car comes, 20 second delay
-		if(!probabilityModel()){
-			cout << "North sleeping 20" << endl;
+		sem_post(&moreCars); // Wake up worker
+		if(!probabilityModel()){ // Check for another car coming
 			pthread_sleep(20);
 		}
 	}
 }
 
+// Formats current time object into a string HH:MM:SS
 string stringTime() {
 	time_t currTime;
 	tm * tmInfo;
@@ -230,19 +206,18 @@ int main(int argc, char* argv[]) {
 		exit(-1);
 	}
 
-	string time = stringTime();
-	cout << time << endl;
 	int cars = atoi(argv[1]);
 	limitCars = cars; // set global limit on number of cars to command line number
-	cout << "Beginning simulation with " << cars << " cars" << endl;
-	carLog << "carID    direction   arrival-time    start-time  end-time\n";
-	//carLog.close();
+	cout << endl <<  "Beginning simulation with " << cars << " cars" << endl << endl << ". . ." << endl;
+
+	// Prep output files
+	carLog << "carID    direction   arrival-time    start-time     end-time\n";
 	carLog.flush();
-	flagPerson << "Time     State\n";
+	flagPerson << "Time         State\n";
 	flagPerson.flush();
 
+	// Initialize global semaphore object
 	sem_init(&moreCars, 0,0);
-
 
 	// Create threads for Northbound, Southbound, and worker
 	pthread_t workerTh;
@@ -260,9 +235,20 @@ int main(int argc, char* argv[]) {
 		perror("could not create worker thread");
 		exit(-1);
 	}
+
+	// Wait on worker thread to terminate
 	if(pthread_join(workerTh, NULL)) {
 		perror("could not join north thread");
 		exit(-1);
 	}
+
+	carLog.close();
+	flagPerson.close();
+
+	// Prevent memory leaks
+	sem_destroy(&moreCars);
+	pthread_mutex_destroy(&queueMutex);
+
+	cout << endl << "Simulation complete. Please see the files 'car.log' and 'flagperson.log'" << endl << endl;
 	return 0;
 }
