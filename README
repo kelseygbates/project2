@@ -1,12 +1,7 @@
-Questions:
-
-If we are trying to model this as a producer consumer problem, can we
-say that the worker is the consumer and the north/south bound threads
-are the producers?
-
+Overview Questions:
 When will the worker thread get blocked?
 * When there are no cars at either lane
-* We want to context switch when there are 10 cars on the other lane
+* We want to context switch when there are 10+ cars in the other lane
 
 When will the northbound thread get blocked?
 * When the worker is asleep
@@ -16,18 +11,24 @@ When will the southbound thread get blocked?
 * When the worker is asleep
 * When the northbound thread is letting cars through
 
-What are the race conditions?
-* North and south queue
-
-Should we use the STL queue to keep track of the cars on either side
-so that we have access to size() instead of using a linked list?
-
-Should we use one mutex lock for both queues of cars?
-
 How many semaphores?
 * 1 mutex lock semaphore that controls access to north and south queues
-* 2 counting semaphores for the number of cars in each queue
+        1. queueMutex
+* 1 semaphore for the number of cars in each queue (initial value 1)
+        1. moreCars
 
-HELP ME
+We technically used 4 threads (with self descriptive titles)
+    1. Northbound cars (produceNorth) - for creating northbound cars/queue
+    2. Southbound cars (produceSouth) - for creating southbound cars/queue
+    3. Worker thread (worker) - for deciding when the worker sleeps/ is awake
+    4. Car thread (consume) - for creating car log
 
-Random number generator passed to multiple threads
+Strengths: Our program is very readable and well commented. Followed multi-threaded, producer/consumer model with an
+           unbounded buffer. Additionally, our program works for almost all of our test cases and our log displays
+           cleanly. No memory leaks or deadlocks.
+
+Weaknesses: There's probably an easier way of doing the carThread block without passing it into another thread.
+
+Kelsey: Pulled project together with carLog, time function, & linking consume/worker functions to make coherent.
+Nathan: worked with mutex locks/semaphore, overall updating, & flagPerson log.
+Bailey: initial north/south producer functions & worker function
