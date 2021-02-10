@@ -1,3 +1,6 @@
+Project Overview:
+- simulated coordinating traffic along one way road with two threads that switched off execution
+
 Overview Questions:
 When will the worker thread get blocked?
 * When there are no cars at either lane
